@@ -12,5 +12,7 @@ The visualization app is an app created using the Dash library that runs locally
 
 **CSVs**
 There are two main CSV outputs: Complete Stats.csv and Normalized Stats Table.csv
+
 Complete Stats is preprocessed data. 1 row represents a single fight for 2 athletes. It is not used in the app.
+
 Normalized Stats Table is processed and normalized. 1 row represents 1 fight for a single athlete. This data is used in the app.
