@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 from dash import Dash, dcc, html, Input, Output, State, callback, Patch, dash_table
 import dash_bootstrap_components as dbc
 
-app = Dash()
+app = Dash(suppress_callback_exceptions = True)
 
 # Preparing data to load into visuals
 df = pd.read_csv('Normalized Stats Table.csv')
@@ -16,7 +16,7 @@ df['subatt_per_sec'] = df['subatt']/df['tot_fight_secs']
 
 tot_fights = df.groupby(['fighter', 'weight']).size().reset_index(name = 'count')
 
-fighter_avgs = df.groupby(['fighter', 'weight'])[['totstr_landed', 'sigstr_landed', 'ctrl_sec', 'is_winner', 'sigstr_per_sec', 'totstr_per_sec', 'subatt_per_sec']].mean().reset_index()
+fighter_avgs = df.groupby(['fighter', 'weight'])[['is_winner', 'totstr_landed', 'sigstr_landed', 'ctrl_sec', 'sigstr_per_sec', 'totstr_per_sec', 'subatt_per_sec']].mean().reset_index()
 
 df_2 = fighter_avgs.merge(tot_fights, how='inner', on=['fighter', 'weight'])
 
@@ -43,83 +43,290 @@ table_data = table_data.drop(columns = ['win_lose', 'subatt_per_sec'])
 
 df_3.rename(columns= {'tot_fight_secs': 'Fight Time (s)','fighter' : 'Fighter' ,'totstr_landed':'Total Strikes Landed', 'sigstr_landed': 'Significant Strikes Landed', 'ctrl_sec': 'Control Time (s)', 'is_winner' : 'Win Ratio',  'sigstr_per_sec': 'Sig Strike Per Sec', 'totstr_per_sec' : 'Total Strike Per Sec', 'count' : 'Count of UFC Fights'}, inplace=True)
 
-df_2.rename(columns= {'tot_fight_secs': 'Fight Time (s)','fighter' : 'Fighter' ,'totstr_landed':'Total Strikes Landed', 'sigstr_landed': 'Significant Strikes Landed', 'ctrl_sec': 'Control Time (s)', 'is_winner' : 'Win Ratio',  'sigstr_per_sec': 'Sig Strike Per Sec', 'totstr_per_sec' : 'Total Strike Per Sec', 'count' : 'Count of UFC Fights'}, inplace=True)
+df_2.rename(columns= {'is_winner' : 'Win Ratio','tot_fight_secs': 'Fight Time (s)','fighter' : 'Fighter' ,'totstr_landed':'Total Strikes Landed', 'sigstr_landed': 'Significant Strikes Landed', 'ctrl_sec': 'Control Time (s)', 'sigstr_per_sec': 'Sig Strike Per Sec', 'totstr_per_sec' : 'Total Strike Per Sec', 'count' : 'Count of UFC Fights'}, inplace=True)
 
 # Primary win method
 wins_method = df[df['is_winner'] == True]
 wins_method  = wins_method .groupby(['weight'])[['totstr_landed', 'sigstr_landed', 'ctrl_sec', 'is_winner', 'sigstr_per_sec', 'totstr_per_sec', 'subatt_per_sec']].mean().reset_index()
-wins_method.rename(columns= {'tot_fight_secs': 'Fight Time (s)','fighter' : 'Fighter' ,'totstr_landed':'Total Strikes Landed', 'sigstr_landed': 'Significant Strikes Landed', 'ctrl_sec': 'Control Time (s)', 'is_winner' : 'Win Ratio',  'sigstr_per_sec': 'Sig Strike Per Sec', 'totstr_per_sec' : 'Total Strike Per Sec', 'count' : 'Count of UFC Fights'}, inplace=True)
+wins_method.rename(columns= {'is_winner' : 'Win Ratio', 'tot_fight_secs': 'Fight Time (s)','fighter' : 'Fighter' ,'totstr_landed':'Total Strikes Landed', 'sigstr_landed': 'Significant Strikes Landed', 'ctrl_sec': 'Control Time (s)', 'sigstr_per_sec': 'Sig Strike Per Sec', 'totstr_per_sec' : 'Total Strike Per Sec', 'count' : 'Count of UFC Fights'}, inplace=True)
 # Primary lose method
 lose_method = df[df['is_winner'] == False]
 lose_method  = lose_method .groupby(['weight'])[['totstr_landed', 'sigstr_landed', 'ctrl_sec', 'is_winner', 'sigstr_per_sec', 'totstr_per_sec', 'subatt_per_sec']].mean().reset_index()
-lose_method.rename(columns= {'tot_fight_secs': 'Fight Time (s)','fighter' : 'Fighter' ,'totstr_landed':'Total Strikes Landed', 'sigstr_landed': 'Significant Strikes Landed', 'ctrl_sec': 'Control Time (s)', 'is_winner' : 'Win Ratio',  'sigstr_per_sec': 'Sig Strike Per Sec', 'totstr_per_sec' : 'Total Strike Per Sec', 'count' : 'Count of UFC Fights'}, inplace=True)
+lose_method.rename(columns= {'is_winner' : 'Win Ratio','tot_fight_secs': 'Fight Time (s)','fighter' : 'Fighter' ,'totstr_landed':'Total Strikes Landed', 'sigstr_landed': 'Significant Strikes Landed', 'ctrl_sec': 'Control Time (s)',  'sigstr_per_sec': 'Sig Strike Per Sec', 'totstr_per_sec' : 'Total Strike Per Sec', 'count' : 'Count of UFC Fights'}, inplace=True)
 
+# For fighter comparison - count of method for each fighter wins with or lost to
+df_winner = df[df['is_winner'] == True].groupby(['fighter', 'method']).size().reset_index(name = 'win count')
+df_loser = df[df['is_winner'] == False].groupby(['fighter', 'method']).size().reset_index(name = 'lose count')
+
+# Drop down option values
 fighter_names = sorted(df['fighter'].unique())
-
 weight_classes = sorted(df['weight'].unique())
 
 
-# User Interface
-app.layout = html.Div(style = {'display':'flex', 'flexDirection':'column'},children=[
-    html.Div(style={
-        'padding': '10px',
-        'textAlign': 'center',
-        'backgroundColor': "#e7e7e7",
-        'border': '1px solid black',
-        'fontFamily': 'Arial, sans-serif'
-    }, children = [
-    html.H1('UFC Fight Stats - Who Da Buckest', style={'textAlign': 'center'})]),
-    
-    html.Div(style = {
-        'display': 'flex'
-    }, children = [
-        html.Div(style = {
-            'width': '20%',
-            'padding' : '5px',
-            'border': '1px solid black',
-            'fontFamily': 'Arial, sans-serif'
-        }, children = [
-            html.H1("Filters"),
-            # html.P("Fighter", style={'fontWeight': 'Bold'}),
-            # dcc.Dropdown(id = 'fighter-name', options = [{'label': fighter, 'value': fighter} for fighter in fighter_names], value = 'Charles Oliveira'),
-            html.P("Stat", style={'fontWeight': 'Bold'}),
-            dcc.Dropdown(id = 'metric', options = ['Fight Time (s)','Total Strikes Landed', 'Significant Strikes Landed','Control Time (s)', 'Win Ratio', 'Sig Strike Per Sec', 'Total Strike Per Sec', 'Count of UFC Fights'], value = 'Total Strikes Landed', clearable=False),
-            html.P("Weight Class", style={'fontWeight': 'Bold'}),
-            dcc.Dropdown(id = 'weight-class-filter', options = [{'label': wc, 'value':wc} for wc in weight_classes], value = 'Lightweight'),
-            html.P("Minimum # of Fights in the UFC", style={'fontWeight': 'Bold'}),
-            dcc.Slider(id= 'fighter-experience', min = 0, max = 15, step = 1, value = 5)
-        ]),
+# USER INTERFACE
+app.layout = html.Div([
+                    html.Div(style={
+                    'padding': '10px',
+                    'textAlign': 'center',
+                    'backgroundColor': "#d5ebfd",
+                    'border': '1px solid black',
+                    'fontFamily': 'Open Sans, sans-serif'
+                }, children = [
+                html.H1('UFC FIGHT STATS', style={'textAlign': 'center'})]),
+    dcc.Tabs(id = 'tabs', value = 'tab-1', children =[
+        dcc.Tab(label = "General Stats", value = 'tab-1', style = {
+            'border' : '1px solid #1a1a1a',
+            'backgroundColor' : "#d5ebfd",
+            'fontFamily': 'Open Sans, sans-serif',
+            'fontSize': '25px'
+        }, selected_style= {
+            'fontWeight' : 'bold',
+            'border' : '1px solid #1a1a1a',
+            'fontFamily': 'Open Sans, sans-serif',
+            'fontSize': '30px'
+        }),
+        dcc.Tab(label = 'Fighter Comparison', value = 'tab-2', style = {
+            'border' : '1px solid #1a1a1a',
+            'backgroundColor' : "#d5ebfd",
+            'fontFamily': 'Open Sans, sans-serif',
+            'fontSize': '25px'
+        }, selected_style= {
+            'fontWeight' : 'bold',
+            'border' : '1px solid #1a1a1a',
+            'fontFamily': 'Open Sans, sans-serif',
+            'fontSize': '30px'
+        })]),
+       # html.Div(id = 'tab-content'),
+        html.Div(id = 'tab1', style = {'display':'flex', 'flexDirection':'column', 'display' : 'block'}, children=[
+                html.Div(style = {
+                    'display': 'flex'
+                }, children = [
+                    html.Div(style = {
+                        'width': '20%',
+                        'padding' : '5px',
+                        'border': '1px solid black',
+                        'fontFamily': 'Open Sans, sans-serif'
+                    }, children = [
+                        html.H1("Filters"),
+                        # html.P("Fighter", style={'fontWeight': 'Bold'}),
+                        # dcc.Dropdown(id = 'fighter-name', options = [{'label': fighter, 'value': fighter} for fighter in fighter_names], value = 'Charles Oliveira'),
+                        html.P("Stat", style={'fontWeight': 'Bold'}),
+                        dcc.Dropdown(id = 'metric', options = ['Fight Time (s)','Total Strikes Landed', 'Significant Strikes Landed','Control Time (s)', 'Win Ratio', 'Sig Strike Per Sec', 'Total Strike Per Sec', 'Count of UFC Fights'], value = 'Total Strikes Landed', clearable=False),
+                        html.P("Weight Class", style={'fontWeight': 'Bold'}),
+                        dcc.Dropdown(id = 'weight-class-filter', options = [{'label': wc, 'value':wc} for wc in weight_classes], value = 'Lightweight'),
+                        html.P("Minimum # of Fights in the UFC", style={'fontWeight': 'Bold'}),
+                        dcc.Slider(id= 'fighter-experience', min = 0, max = 15, step = 1, value = 5)
+                    ]),
 
-        html.Div(style = {
-            'width': '80%',
-            'padding' : '5px',
-            'border': '1px solid black',
-            'gap' : '10px',
-            'fontFamily': 'Arial, sans-serif'
-        }, children = [
-            dcc.Graph(id='avgs-chart'),
-            dcc.Graph(id = 'gbar'),
-            dash_table.DataTable(
-                id = 'fighter-table',
-                columns = [{'name': col, 'id': col} for col in table_data.columns],
-                data = table_data.to_dict('records'),
-                style_table = {'overflowX': 'auto'},
-                style_cell = {'textAlign': 'left',
-                              'fontFamily': 'Arial, sans-serif',
-                              'height' : 'auto',
-                              'whiteSpace' : 'normal'},
-                style_header = {
-                            'backgroundColor' : "#dae3ff",
-                            'fontWeight' : 'bold',
-                            'textAlign': 'center'
-                },
-                page_size = 5,
-                filter_action= 'native'
-            )
-        ])])
-])
+                    html.Div(style = {
+                        'width': '80%',
+                        'padding' : '5px',
+                        'border': '1px solid black',
+                        'gap' : '10px',
+                        'fontFamily': 'Open Sans, sans-serif'
+                    }, children = [
+                        dcc.Graph(id = 'avgs-chart'),
+                        dcc.Graph(id = 'gbar'),
+                        dash_table.DataTable(
+                            id = 'fighter-table',
+                            columns = [{'name': col, 'id': col} for col in table_data.columns],
+                            data = table_data.to_dict('records'),
+                            style_table = {'overflowX': 'auto'},
+                            style_cell = {'textAlign': 'left',
+                                        'fontFamily': 'Open Sans, sans-serif',
+                                        'height' : 'auto',
+                                        'whiteSpace' : 'normal'},
+                            style_header = {
+                                        'backgroundColor' : "#d5ebfd",
+                                        'fontWeight' : 'bold',
+                                        'textAlign': 'center'
+                            },
+                            page_size = 5,
+                            filter_action= 'native'
+                        )
+                    ])])
+            ]),
+            html.Div(id = 'tab2', style = {'display':'flex', 'display': 'none', 'flexDirection': 'row'},children=[
+            html.Div(style = {
+                        'padding' : '5px',
+                       # 'border': '1px solid black',
+                        'fontFamily': 'Open Sans, sans-serif',
+                        'width' : '49%', 
+                        'display': 'inline-block'
+                    }, children = [
+                        html.H1("Fighter 1"),
+                        dcc.Dropdown(id = 'fighter1-name', options = fighter_names, style= {'width': '400px'}),
+                        dcc.Graph(id = 'method-bar1'),
+                        dash_table.DataTable(
+                            id = 'fighter-table1',
+                            columns = [{'name': col, 'id': col} for col in table_data.columns],
+                            data = table_data.to_dict('records'),
+                            style_table = {'overflowX': 'auto'},
+                            style_cell = {'textAlign': 'left',
+                                        'fontFamily': 'Open Sans, sans-serif',
+                                        'height' : 'auto',
+                                        'whiteSpace' : 'normal'},
+                            style_header = {
+                                        'backgroundColor' : "#d5ebfd",
+                                        'fontWeight' : 'bold',
+                                        'textAlign': 'center'
+                            },
+                            page_size = 5)
+                            ]),
+            html.Div(style = {
+                        'padding' : '15px',
+                        #'border': '1px solid black',
+                        'fontFamily': 'Open Sans, sans-serif',
+                        'width' : '49%', 
+                        'display': 'inline-block'
+                        }, children = [
+                            html.H1("Fighter 2"),
+                            dcc.Dropdown(id = 'fighter2-name', options = fighter_names, style= {'width': '400px'}),
+                            dcc.Graph(id = 'method-bar2'),
+                            dash_table.DataTable(
+                            id = 'fighter-table2',
+                            columns = [{'name': col, 'id': col} for col in table_data.columns],
+                            data = table_data.to_dict('records'),
+                            style_table = {'overflowX': 'auto'},
+                            style_cell = {'textAlign': 'left',
+                                        'fontFamily': 'Open Sans, sans-serif',
+                                        'height' : 'auto',
+                                        'whiteSpace' : 'normal'},
+                            style_header = {
+                                        'backgroundColor' : "#d5ebfd",
+                                        'fontWeight' : 'bold',
+                                        'textAlign': 'center'
+                            },
+                            page_size = 5)
+                            ])
+                        
+            ])
+    ])
 
 # Callbacks
+@app.callback(
+        Output('tab1', 'style'),
+        Output('tab2', 'style'),
+        Input('tabs', 'value')
+)
+
+def display_tab(tab):
+    if tab == 'tab-1':
+        return {'display': 'block'}, {'display': 'none'}
+    elif tab == 'tab-2':
+        return {'display': 'none'}, {'display': 'inline-block'}
+
+# def display_tab(tab):
+#     if tab == 'tab-1':
+#         return html.Div(style = {'display':'flex', 'flexDirection':'column'},children=[
+#                 html.Div(style = {
+#                     'display': 'flex'
+#                 }, children = [
+#                     html.Div(style = {
+#                         'width': '20%',
+#                         'padding' : '5px',
+#                         'border': '1px solid black',
+#                         'fontFamily': 'Open Sans, sans-serif'
+#                     }, children = [
+#                         html.H1("Filters"),
+#                         # html.P("Fighter", style={'fontWeight': 'Bold'}),
+#                         # dcc.Dropdown(id = 'fighter-name', options = [{'label': fighter, 'value': fighter} for fighter in fighter_names], value = 'Charles Oliveira'),
+#                         html.P("Stat", style={'fontWeight': 'Bold'}),
+#                         dcc.Dropdown(id = 'metric', options = ['Fight Time (s)','Total Strikes Landed', 'Significant Strikes Landed','Control Time (s)', 'Win Ratio', 'Sig Strike Per Sec', 'Total Strike Per Sec', 'Count of UFC Fights'], value = 'Total Strikes Landed', clearable=False),
+#                         html.P("Weight Class", style={'fontWeight': 'Bold'}),
+#                         dcc.Dropdown(id = 'weight-class-filter', options = [{'label': wc, 'value':wc} for wc in weight_classes], value = 'Lightweight'),
+#                         html.P("Minimum # of Fights in the UFC", style={'fontWeight': 'Bold'}),
+#                         dcc.Slider(id= 'fighter-experience', min = 0, max = 15, step = 1, value = 5)
+#                     ]),
+
+#                     html.Div(style = {
+#                         'width': '80%',
+#                         'padding' : '5px',
+#                        # 'border': '1px solid black',
+#                         'gap' : '10px',
+#                         'fontFamily': 'Open Sans, sans-serif'
+#                     }, children = [
+#                         dcc.Graph(id = 'avgs-chart'),
+#                         dcc.Graph(id = 'gbar'),
+#                         dash_table.DataTable(
+#                             id = 'fighter-table',
+#                             columns = [{'name': col, 'id': col} for col in table_data.columns],
+#                             data = table_data.to_dict('records'),
+#                             style_table = {'overflowX': 'auto'},
+#                             style_cell = {'textAlign': 'left',
+#                                         'fontFamily': 'Open Sans, sans-serif',
+#                                         'height' : 'auto',
+#                                         'whiteSpace' : 'normal'},
+#                             style_header = {
+#                                         'backgroundColor' : "#dae3ff",
+#                                         'fontWeight' : 'bold',
+#                                         'textAlign': 'center'
+#                             },
+#                             page_size = 5,
+#                             filter_action= 'native'
+#                         )
+#                     ])])
+#             ])
+#     elif tab == 'tab-2':
+#         return html.Div(style = {'display':'flex', 'flexDirection':'row'},children=[
+#             html.Div(style = {
+#                         'width': '50%',
+#                         'padding' : '5px',
+#                         'border': '1px solid black',
+#                         'fontFamily': 'Open Sans, sans-serif'
+#                     }, children = [
+#                         html.H1("Fighter 1"),
+#                         dcc.Dropdown(id = 'fighter1-name', options = fighter_names),
+#                         dcc.Graph(id = 'method-bar1'),
+#                         dash_table.DataTable(
+#                             id = 'fighter-table1',
+#                             columns = [{'name': col, 'id': col} for col in table_data.columns],
+#                             data = table_data.to_dict('records'),
+#                             style_table = {'overflowX': 'auto'},
+#                             style_cell = {'textAlign': 'left',
+#                                         'fontFamily': 'Open Sans, sans-serif',
+#                                         'height' : 'auto',
+#                                         'whiteSpace' : 'normal'},
+#                             style_header = {
+#                                         'backgroundColor' : "#dae3ff",
+#                                         'fontWeight' : 'bold',
+#                                         'textAlign': 'center'
+#                             },
+#                             page_size = 5)
+#                             ]),
+#             html.Div(style = {
+#                         'width': '50%',
+#                         'padding' : '5px',
+#                         'border': '1px solid black',
+#                         'fontFamily': 'Open Sans, sans-serif'
+#                         }, children = [
+#                             html.H1("Fighter 2"),
+#                             dcc.Dropdown(id = 'fighter2-name', options = fighter_names),
+#                             dcc.Graph(id = 'method-bar2'),
+#                             dash_table.DataTable(
+#                             id = 'fighter-table2',
+#                             columns = [{'name': col, 'id': col} for col in table_data.columns],
+#                             data = table_data.to_dict('records'),
+#                             style_table = {'overflowX': 'auto'},
+#                             style_cell = {'textAlign': 'left',
+#                                         'fontFamily': 'Open Sans, sans-serif',
+#                                         'height' : 'auto',
+#                                         'whiteSpace' : 'normal'},
+#                             style_header = {
+#                                         'backgroundColor' : "#dae3ff",
+#                                         'fontWeight' : 'bold',
+#                                         'textAlign': 'center'
+#                             },
+#                             page_size = 5)
+#                             ])
+                        
+#             ])
+
+
+
+
+
+
 @app.callback(
     Output('avgs-chart', 'figure'),
     Output('gbar', 'figure'),
@@ -128,7 +335,8 @@ app.layout = html.Div(style = {'display':'flex', 'flexDirection':'column'},child
     Input('fighter-experience', 'value'),
     Input('metric', 'value')
 )
-def filter_by_weight(selected_wc, fighter_experience, metric):
+
+def filter_general_stats(selected_wc, fighter_experience, metric):
     
     # if name is None:
     #     filt_df = df_3
@@ -219,6 +427,59 @@ def filter_by_weight(selected_wc, fighter_experience, metric):
  
 
     return fig, grouped_bar
+
+@app.callback(
+    Output('method-bar1', 'figure'),
+    Output('method-bar2', 'figure'),
+    Output('fighter-table1', 'data'),
+    Output('fighter-table2', 'data'),
+    Input('fighter1-name', 'value'),
+    Input('fighter2-name', 'value'),
+)
+
+
+def filter_fighter_comparison(fighter1, fighter2):
+    f1_win = df_winner[df_winner['fighter'] == fighter1]
+    f2_win = df_winner[df_winner['fighter'] == fighter2]
+    f1_lose = df_winner[df_loser['fighter'] == fighter1]
+    f2_lose = df_winner[df_loser['fighter'] == fighter2]
+    
+    fig1 = go.Figure(data = [
+        go.Bar(name = 'Wins', x = f1_win['method'], y = f1_win['win count'], marker = dict(color = 'green')),
+        go.Bar(name = 'Loss', x = f1_lose['method'], y = f1_lose['win count'], marker = dict(color = 'red'))
+    ])
+    fig1.update_layout(
+        title = f"{fighter1}'s Wins by Method",
+        xaxis_title = 'Method',
+        yaxis_title = "Count",
+        xaxis_tickangle = -45
+    )
+
+    fig2 = go.Figure(data = [
+        go.Bar(name = 'Wins', x = f2_win['method'], y = f2_win['win count'], marker = dict(color = 'green')),
+        go.Bar(name = 'Loss', x = f2_lose['method'], y = f2_lose['win count'], marker = dict(color = 'red'))
+    ])
+    fig2.update_layout(
+        title = f"{fighter1}'s Wins by Method",
+        xaxis_title = 'Method',
+        yaxis_title = "Count",
+        xaxis_tickangle = -45
+    )
+
+    fig2.update_layout(
+        title = f"{fighter2}'s Wins by Method",
+        xaxis_title = 'Method',
+        yaxis_title = "Count",
+        xaxis_tickangle = -45
+    )
+
+    fighter1_table = table_data[table_data['Fighter'] == fighter1]
+    fighter2_table = table_data[table_data['Fighter'] == fighter2]
+
+
+    return fig1, fig2, fighter1_table.to_dict('records'), fighter2_table.to_dict('records')
+
+
 
 if __name__ == '__main__':
     app.run(debug = True)
