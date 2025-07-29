@@ -1,0 +1,10 @@
+pandas
+requests
+plotly.express
+plotly.graph_objects
+dash
+dash_bootstrap_components
+bs4
+csv
+re
+time
