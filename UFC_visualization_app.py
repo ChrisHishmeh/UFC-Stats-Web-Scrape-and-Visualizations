@@ -163,7 +163,7 @@ app.layout = html.Div([
                         'padding' : '5px',
                        # 'border': '1px solid black',
                         'fontFamily': 'Open Sans, sans-serif',
-                        'width' : '49%', 
+                        'width' : '48%', 
                         'display': 'inline-block'
                     }, children = [
                         dcc.RadioItems(id  = 'round-nums-filter', options=['3 Rounds', '5 Rounds', 'All'], value = '3 Rounds', inline = True, style={'fontSize': '20px', 'padding': '10px'}),
@@ -190,7 +190,7 @@ app.layout = html.Div([
                         'padding' : '15px',
                         #'border': '1px solid black',
                         'fontFamily': 'Open Sans, sans-serif',
-                        'width' : '49%', 
+                        'width' : '48%', 
                         'display': 'inline-block'
                         }, children = [
                             dcc.Dropdown(id = 'fighter2-name', options = fighter_names, style= {'width': '400px', 'fontWeight': 'bold', 'fontSize': '25px'}),
@@ -276,7 +276,8 @@ def filter_general_stats(selected_wc, fighter_experience, metric):
         title = f'Average Number of {metric} by Fighter in {bar_title}',
         xaxis_title = 'Fighter',
         yaxis_title = f"Average {metric}",
-        xaxis_tickangle = -45
+        xaxis_tickangle = -45,
+        height = 525
     )
     
     avg_line = round(filt_df3[metric].mean())
@@ -329,7 +330,8 @@ def filter_general_stats(selected_wc, fighter_experience, metric):
         title = f'Average Number of {metric} by Weight Class and Fight Outcome',
         xaxis_title = 'Weight Class',
         yaxis_title = f"Average {metric}",
-        xaxis_tickangle = -45
+        xaxis_tickangle = -45,
+        height = 525
     )
  
 
