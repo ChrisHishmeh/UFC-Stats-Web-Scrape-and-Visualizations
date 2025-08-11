@@ -137,8 +137,8 @@ app.layout = html.Div([
                         'gap' : '10px',
                         'fontFamily': 'Open Sans, sans-serif'
                     }, children = [
-                        dcc.Graph(id = 'avgs-chart'),
-                        dcc.Graph(id = 'gbar'),
+                        dcc.Graph(id = 'avgs-chart', style = {'height': '525px'}),
+                        dcc.Graph(id = 'gbar', style = {'height': '525px'}),
                         dash_table.DataTable(
                             id = 'fighter-table',
                             columns = [{'name': col, 'id': col} for col in table_data.columns],
