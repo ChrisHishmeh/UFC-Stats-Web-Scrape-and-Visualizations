@@ -4,7 +4,4 @@ plotly
 dash
 dash_bootstrap_components
 bs4
-csv
-re
-time
 gunicorn
