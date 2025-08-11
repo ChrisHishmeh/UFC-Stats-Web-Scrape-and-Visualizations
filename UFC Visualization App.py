@@ -14,6 +14,8 @@ df['sigstr_per_sec'] = df['sigstr_landed']/df['tot_fight_secs']
 df['totstr_per_sec'] = df['totstr_landed']/df['tot_fight_secs']
 df['subatt_per_sec'] = df['subatt']/df['tot_fight_secs']
 
+df['rounds_round'] = df['tot_fight_secs']/300
+
 tot_fights = df.groupby(['fighter', 'weight']).size().reset_index(name = 'count')
 
 fighter_avgs = df.groupby(['fighter', 'weight'])[['is_winner', 'totstr_landed', 'sigstr_landed', 'ctrl_sec', 'sigstr_per_sec', 'totstr_per_sec', 'subatt_per_sec']].mean().reset_index()
@@ -23,11 +25,11 @@ df_2 = fighter_avgs.merge(tot_fights, how='inner', on=['fighter', 'weight'])
 df_2['win_lose'] = df_2['is_winner'].apply(lambda x: 'green' if x >= 0.5 else "red")
 
 # Without weight class grouping
-tot_fights_nowc = df.groupby(['fighter']).size().reset_index(name = 'count')
+tot_fights_nowc = df.groupby(['fighter','tot_round']).size().reset_index(name = 'count')
 
-fighter_avgs_nowc = df.groupby(['fighter'])[['totstr_landed', 'sigstr_landed', 'ctrl_sec', 'is_winner', 'sigstr_per_sec', 'totstr_per_sec', 'subatt_per_sec', 'tot_fight_secs']].mean().reset_index()
+fighter_avgs_nowc = df.groupby(['fighter','tot_round'])[['totstr_landed', 'sigstr_landed', 'ctrl_sec', 'is_winner', 'sigstr_per_sec', 'totstr_per_sec', 'subatt_per_sec', 'tot_fight_secs']].mean().reset_index()
 
-df_3 = fighter_avgs_nowc.merge(tot_fights_nowc, how='inner', on=['fighter'])
+df_3 = fighter_avgs_nowc.merge(tot_fights_nowc, how='inner', on=['fighter', 'tot_round'])
 
 df_3['win_lose'] = df_3['is_winner'].apply(lambda x: 'green' if x >= 0.5 else "red")
 round_cols1 = ['totstr_landed', 'sigstr_landed', 'ctrl_sec', 'subatt_per_sec', 'tot_fight_secs']
@@ -38,8 +40,11 @@ df_3[round_cols1] = round(df_3[round_cols1])
 df_3[round_cols2] = round(df_3[round_cols2], 2)
 
 
-table_data = df_3.rename(columns= {'tot_fight_secs': 'Avg Fight Time (secs)','fighter' : 'Fighter' ,'totstr_landed':'Avg Total Strikes Landed', 'sigstr_landed': 'Avg Significant Strikes Landed', 'ctrl_sec': 'Avg Control (secs)', 'is_winner' : 'Win Ratio',  'sigstr_per_sec': 'Avg Sig Strike Per Sec', 'totstr_per_sec' : 'Avg Total Strike Per Sec', 'count' : 'Count of UFC Fights'})
+table_data = df_3.rename(columns= {'tot_fight_secs': 'Avg Fight Time (secs)','fighter' : 'Fighter' ,'totstr_landed':'Avg Total Strikes Landed', 'sigstr_landed': 'Avg Significant Strikes Landed', 'ctrl_sec': 'Avg Control (secs)', 'is_winner' : 'Win Ratio',  'sigstr_per_sec': 'Avg Sig Strike Per Sec', 'totstr_per_sec' : 'Avg Total Strike Per Sec', 'count' : 'Count of UFC Fights', 'tot_round': 'Total Rounds'})
+
 table_data = table_data.drop(columns = ['win_lose', 'subatt_per_sec'])
+
+table_data = table_data[['Fighter','Total Rounds', 'Win Ratio', 'Count of UFC Fights', 'Avg Total Strikes Landed', 'Avg Significant Strikes Landed', 'Avg Control (secs)', 'Avg Sig Strike Per Sec', 'Avg Total Strike Per Sec', 'Avg Fight Time (secs)']]
 
 df_3.rename(columns= {'tot_fight_secs': 'Fight Time (s)','fighter' : 'Fighter' ,'totstr_landed':'Total Strikes Landed', 'sigstr_landed': 'Significant Strikes Landed', 'ctrl_sec': 'Control Time (s)', 'is_winner' : 'Win Ratio',  'sigstr_per_sec': 'Sig Strike Per Sec', 'totstr_per_sec' : 'Total Strike Per Sec', 'count' : 'Count of UFC Fights'}, inplace=True)
 
@@ -56,7 +61,13 @@ lose_method.rename(columns= {'is_winner' : 'Win Ratio','tot_fight_secs': 'Fight 
 
 # For fighter comparison - count of method for each fighter wins with or lost to
 df_winner = df[df['is_winner'] == True].groupby(['fighter', 'method']).size().reset_index(name = 'win count')
-df_loser = df[df['is_winner'] == False].groupby(['fighter', 'method']).size().reset_index(name = 'lose count')
+df_winner =  df[df['is_winner'] == True].groupby(['fighter', 'method', 'tot_round']).size().reset_index(name = 'win count')
+df_winner3 = df_winner[df_winner['tot_round'] == '3']
+df_winner5 = df_winner[df_winner['tot_round'] == '5']
+
+df_loser = df[df['is_winner'] == False].groupby(['fighter', 'method', 'tot_round']).size().reset_index(name = 'lose count')
+df_loser3 = df_loser[df_loser['tot_round'] == '3']
+df_loser5 = df_loser[df_loser['tot_round'] == '5']
 
 # Drop down option values
 fighter_names = sorted(df['fighter'].unique())
@@ -154,9 +165,10 @@ app.layout = html.Div([
                         'width' : '49%', 
                         'display': 'inline-block'
                     }, children = [
-                        html.H1("Fighter 1"),
-                        dcc.Dropdown(id = 'fighter1-name', options = fighter_names, style= {'width': '400px'}),
+                        dcc.RadioItems(id  = 'round-nums-filter', options=['3 Rounds', '5 Rounds', 'All'], value = '3 Rounds', inline = True),
+                        dcc.Dropdown(id = 'fighter1-name', options = fighter_names, style= {'width': '400px', 'fontWeight': 'bold', 'fontSize': '25px'}),
                         dcc.Graph(id = 'method-bar1'),
+                        dcc.Graph(id = 'rounds-hist-1'),
                         dash_table.DataTable(
                             id = 'fighter-table1',
                             columns = [{'name': col, 'id': col} for col in table_data.columns],
@@ -180,9 +192,9 @@ app.layout = html.Div([
                         'width' : '49%', 
                         'display': 'inline-block'
                         }, children = [
-                            html.H1("Fighter 2"),
-                            dcc.Dropdown(id = 'fighter2-name', options = fighter_names, style= {'width': '400px'}),
+                            dcc.Dropdown(id = 'fighter2-name', options = fighter_names, style= {'width': '400px', 'fontWeight': 'bold', 'fontSize': '25px'}),
                             dcc.Graph(id = 'method-bar2'),
+                            dcc.Graph(id = 'rounds-hist-2'),
                             dash_table.DataTable(
                             id = 'fighter-table2',
                             columns = [{'name': col, 'id': col} for col in table_data.columns],
@@ -431,22 +443,45 @@ def filter_general_stats(selected_wc, fighter_experience, metric):
 @app.callback(
     Output('method-bar1', 'figure'),
     Output('method-bar2', 'figure'),
+    Output('rounds-hist-1', 'figure'),
+    Output('rounds-hist-2', 'figure'),
     Output('fighter-table1', 'data'),
     Output('fighter-table2', 'data'),
+    Input('round-nums-filter', 'value'),
     Input('fighter1-name', 'value'),
     Input('fighter2-name', 'value'),
 )
 
 
-def filter_fighter_comparison(fighter1, fighter2):
-    f1_win = df_winner[df_winner['fighter'] == fighter1]
-    f2_win = df_winner[df_winner['fighter'] == fighter2]
-    f1_lose = df_winner[df_loser['fighter'] == fighter1]
-    f2_lose = df_winner[df_loser['fighter'] == fighter2]
+def filter_fighter_comparison(rounds, fighter1, fighter2):
+    if rounds == '3 Rounds':
+        f1_win = df_winner3[df_winner3['fighter'] == fighter1]
+        f2_win = df_winner3[df_winner3['fighter'] == fighter2]
+        f1_lose = df_loser3[df_loser3['fighter'] == fighter1]
+        f2_lose = df_loser3[df_loser3['fighter'] == fighter2]
+        hist_data = df[df['tot_round'] == '3']
+        end_interval = 3
+        table_data_show = table_data[table_data['Total Rounds'] == '3']
+    elif rounds == '5 Rounds':
+        f1_win = df_winner5[df_winner5['fighter'] == fighter1]
+        f2_win = df_winner5[df_winner5['fighter'] == fighter2]
+        f1_lose = df_loser5[df_loser5['fighter'] == fighter1]
+        f2_lose = df_loser5[df_loser5['fighter'] == fighter2]
+        hist_data = df[df['tot_round'] == '5']
+        end_interval = 5
+        table_data_show = table_data[table_data['Total Rounds'] == '5']
+    else:
+        f1_win = df_winner[df_winner['fighter'] == fighter1]
+        f2_win = df_winner[df_winner['fighter'] == fighter2]
+        f1_lose = df_loser[df_loser['fighter'] == fighter1]
+        f2_lose = df_loser[df_loser['fighter'] == fighter2]
+        table_data_show = table_data
+        hist_data = df
+        end_interval = 5
     
     fig1 = go.Figure(data = [
         go.Bar(name = 'Wins', x = f1_win['method'], y = f1_win['win count'], marker = dict(color = 'green')),
-        go.Bar(name = 'Loss', x = f1_lose['method'], y = f1_lose['win count'], marker = dict(color = 'red'))
+        go.Bar(name = 'Loss', x = f1_lose['method'], y = f1_lose['lose count'], marker = dict(color = 'red'))
     ])
     fig1.update_layout(
         title = f"{fighter1}'s Wins by Method",
@@ -457,27 +492,64 @@ def filter_fighter_comparison(fighter1, fighter2):
 
     fig2 = go.Figure(data = [
         go.Bar(name = 'Wins', x = f2_win['method'], y = f2_win['win count'], marker = dict(color = 'green')),
-        go.Bar(name = 'Loss', x = f2_lose['method'], y = f2_lose['win count'], marker = dict(color = 'red'))
+        go.Bar(name = 'Loss', x = f2_lose['method'], y = f2_lose['lose count'], marker = dict(color = 'red'))
     ])
     fig2.update_layout(
-        title = f"{fighter1}'s Wins by Method",
+        title = f"{fighter1}'s {rounds} Wins by Method",
         xaxis_title = 'Method',
         yaxis_title = "Count",
         xaxis_tickangle = -45
     )
 
     fig2.update_layout(
-        title = f"{fighter2}'s Wins by Method",
+        title = f"{fighter2}'s {rounds} Wins by Method",
         xaxis_title = 'Method',
         yaxis_title = "Count",
         xaxis_tickangle = -45
     )
 
-    fighter1_table = table_data[table_data['Fighter'] == fighter1]
-    fighter2_table = table_data[table_data['Fighter'] == fighter2]
+    hist1 = hist_data[hist_data['fighter'] == fighter1]
+    hist1 = go.Figure(go.Histogram(
+            x = hist1['rounds_round'],
+            xbins=dict(
+                start=0, end=end_interval, size=0.5
+            ), 
+            autobinx=False,
+            marker = dict(line = dict(
+                color = 'black',
+                width=1
+            ))
+        ))
+    hist1.update_layout(
+        title = f"{fighter1}'s {rounds} Fight Length",
+        xaxis_title = 'Length of Fight (Intervals of 0.5 Round)',
+        yaxis_title = 'Count'
+    )
+    
+    hist2 = hist_data[hist_data['fighter'] == fighter2]
+    hist2 = go.Figure(go.Histogram(
+            x = hist2['rounds_round'],
+            xbins=dict(
+                start=0, end=end_interval, size=0.5
+            ), 
+            autobinx=False,
+            marker = dict(line = dict(
+                color = 'black',
+                width=1
+            ))
+        ))
+    hist2.update_layout(
+        title = f"{fighter2}'s {rounds} Fight Length",
+        xaxis_title = 'Length of Fight (Intervals of 0.5 Round)',
+        yaxis_title = 'Count'
+    )
 
 
-    return fig1, fig2, fighter1_table.to_dict('records'), fighter2_table.to_dict('records')
+    fighter1_table = table_data_show[table_data_show['Fighter'] == fighter1]
+    fighter2_table = table_data_show[table_data_show['Fighter'] == fighter2]
+
+
+    return fig1, fig2, hist1, hist2, fighter1_table.to_dict('records'), fighter2_table.to_dict('records')
 
 
 
