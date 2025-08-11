@@ -381,7 +381,7 @@ def filter_fighter_comparison(rounds, fighter1, fighter2):
         go.Bar(name = 'Loss', x = f1_lose['method'], y = f1_lose['lose count'], marker = dict(color = 'red'))
     ])
     fig1.update_layout(
-        title = f"{fighter1}'s Wins by Method",
+        title = f"{fighter1}'s Wins by Method ({rounds})",
         xaxis_title = 'Method',
         yaxis_title = "Count",
         xaxis_tickangle = -45
@@ -391,12 +391,7 @@ def filter_fighter_comparison(rounds, fighter1, fighter2):
         go.Bar(name = 'Wins', x = f2_win['method'], y = f2_win['win count'], marker = dict(color = 'green')),
         go.Bar(name = 'Loss', x = f2_lose['method'], y = f2_lose['lose count'], marker = dict(color = 'red'))
     ])
-    fig2.update_layout(        title = f"{fighter1}'s Wins by Method ({rounds})",
-        xaxis_title = 'Method',
-        yaxis_title = "Count",
-        xaxis_tickangle = -45
-    )
-
+    
     fig2.update_layout(
         title = f"{fighter2}'s Wins by Method ({rounds})",
         xaxis_title = 'Method',
