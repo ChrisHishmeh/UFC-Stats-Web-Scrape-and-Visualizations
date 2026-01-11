@@ -1,4 +1,5 @@
 # UFC-Stats-Web-Scrape-and-Visualizations
+View deployed app here (https://ufc-stats-visualizations.onrender.com)
 Python data pipeline designed to scrape stats data from UFC's official stats website (http://www.ufcstats.com/statistics/events/completed), clean and transform this data, load this data into a dash app for interactive visualizations, and incrementally refresh when new fights stats are published on the website. 
 
  **Inital Scrape**
