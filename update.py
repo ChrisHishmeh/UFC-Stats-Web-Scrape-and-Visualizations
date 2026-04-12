@@ -222,12 +222,12 @@ def get_total_fight_time(row):
 def consolidate_methods(x):
     if "SUB" in x:
         return "SUB"
-    elif "KO" in x:
+    if "KO" in x:
         return "KO/TKO"
-    elif "DEC" in x:
+    if "DEC" in x:
         return "DEC"
-    else: 
-        return "DQ/CNC/Overturned/Other"
+    
+    return "DQ/CNC/Overturned/Other"
 
 def clean_and_prepare_final_df(detailed_df: pd.DataFrame, 
                                initial_df: pd.DataFrame) -> pd.DataFrame:

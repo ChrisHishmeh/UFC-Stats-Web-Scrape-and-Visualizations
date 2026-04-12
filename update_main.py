@@ -1,13 +1,20 @@
 from update import get_latest_fight_date, get_latest_events, \
             get_first_webpage_data, get_all_detailed_data, clean_and_prepare_final_df, \
             write_complete_stats, write_normalized_stats
-from gcp import create_bucket
+from gcp import check_bucket_exists
 
-PROJECT_ID = "ufc-data-pull"
-BUCKET_NAME = "ufc-data-pull-results-001"
+PROJECT_ID = 'ufc-data-pull'
+BUCKET_NAME = 'ufc-data-pull-results-001'
 
 def main(project_id: str, bucket_name: str):
-    create_bucket(bucket_name, project_id)
+    '''
+    Checks if bucket exists
+    Pulls files currently in bucket and performs an inital scrape to determine if refresh is necessary
+    Gets stats info for fights not currently captured in csvs, decided by date
+    Cleans data
+    Writes csv files back to GCP storage
+    '''
+    check_bucket_exists(bucket_name, project_id)
 
     print('Starting get_latest_fight_date')
     latest_date, current_df = get_latest_fight_date(bucket_name)
@@ -56,4 +63,3 @@ if __name__ == '__main__':
         line_no = last_frame[1]
         func_name = last_frame[2]
         print(f'File: {file} \nLine: {line_no} \nFunction: {func_name}')
-

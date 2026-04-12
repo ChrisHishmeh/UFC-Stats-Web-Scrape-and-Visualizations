@@ -34,14 +34,16 @@ def write_df_to_bucket(bucket_name: str, file_path: str, df: pd.DataFrame) -> No
     
     return
 
-def create_bucket(bucket_name: str, project_id: str) -> None:
+class GCPBucketNotFound(Exception):
+    pass
+
+def check_bucket_exists(bucket_name: str, project_id: str) -> None:
     '''
     attempts to create a bucket. skips if bucket already exists
     '''
     client = storage.Client(project=project_id)
 
-    try:
-        client.create_bucket(bucket_name)
+    bucket = client.bucket(bucket_name)
 
-    except Conflict:
-        pass
+    if not bucket.exist():
+        raise GCPBucketNotFound(f'Cannot find bucket: {bucket_name} in the given project_id. Ensure bucket and csv files exist before rerunning')
