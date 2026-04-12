@@ -3,14 +3,14 @@ import requests
 import time
 import datetime
 from bs4 import BeautifulSoup
-import os
+from gcp import write_df_to_bucket, get_file_from_bucket
 
 
-def get_latest_fight_date() -> tuple[datetime, pd.DataFrame]:
+def get_latest_fight_date(bucket_name: str) -> tuple[datetime, pd.DataFrame]:
     '''
     Getting latest date from our current dataset
     '''
-    current_df = pd.read_csv("Complete Stats.csv")
+    current_df = get_file_from_bucket(bucket_name, "Complete Stats.csv")
     current_df["dates"] = pd.to_datetime(current_df["dates"])
 
     return  current_df["dates"].max(), current_df
@@ -309,7 +309,8 @@ def clean_and_prepare_final_df(detailed_df: pd.DataFrame,
     return complete_df
 
 def write_complete_stats(complete_df: pd.DataFrame,
-                         current_df: pd.DataFrame) -> None:
+                         current_df: pd.DataFrame,
+                         bucket_name: str) -> None:
     '''
     writes complete stats table back to current dir
     '''
@@ -319,14 +320,16 @@ def write_complete_stats(complete_df: pd.DataFrame,
 
     new_total_stats.drop_duplicates(inplace=True)
 
-    new_total_stats.to_csv("Complete Stats.csv", index=False)
+    write_df_to_bucket(bucket_name, 'Complete Stats.csv', new_total_stats)
+
+    # new_total_stats.to_csv("Complete Stats.csv", index=False)
     return
 
-def write_normalized_stats() -> None:
+def write_normalized_stats(bucket_name) -> None:
     '''
     breaks down data so each fighter has their own row, then writes csv to dir
     '''
-    stats_df = pd.read_csv("Complete Stats.csv")
+    stats_df = get_file_from_bucket(bucket_name, "Complete Stats.csv")
     f1_df = stats_df[['event', 'fighter1', 'weight', 'rounds',
        'times', 'method', 'locations', 'dates', 'stats_url', 'f1_kd',
        'f1_sigstr_pct', 'f1_td_pct', 'f1_subatt', 'f1_rev', 'f1_ctrl',
@@ -370,5 +373,6 @@ def write_normalized_stats() -> None:
     
     norm_df = pd.concat([f1_df, f2_df], ignore_index = True)
     norm_df['method'] = norm_df['method'].apply(consolidate_methods)
-    norm_df.to_csv("Normalized Stats Table.csv", index=False)
+    # norm_df.to_csv("Normalized Stats Table.csv", index=False)
+    write_df_to_bucket(bucket_name, 'Normalized Stats Table.csv', norm_df)
     return

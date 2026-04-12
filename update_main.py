@@ -1,10 +1,16 @@
 from update import get_latest_fight_date, get_latest_events, \
             get_first_webpage_data, get_all_detailed_data, clean_and_prepare_final_df, \
             write_complete_stats, write_normalized_stats
+from gcp import create_bucket
 
-def main():
+PROJECT_ID = "ufc-data-pull"
+BUCKET_NAME = "ufc-data-pull-results-001"
+
+def main(project_id: str, bucket_name: str):
+    create_bucket(bucket_name, project_id)
+
     print('Starting get_latest_fight_date')
-    latest_date, current_df = get_latest_fight_date()
+    latest_date, current_df = get_latest_fight_date(bucket_name)
     print('Completed get_lates_fight_date')
 
     print('Starting get_latest_events')
@@ -15,6 +21,10 @@ def main():
     initial_df = get_first_webpage_data(primary_links, latest_date)
     print('Completed get_first_webpage_data')
 
+    if initial_df.empty:
+        print(f"No updates found given latest_date: {latest_date} \nQuitting")
+        return
+
     print('Starting get_all_detailed_data')
     detailed_df = get_all_detailed_data(initial_df['stats_url'])
     print('Completed get_all_detailed_data')
@@ -23,17 +33,18 @@ def main():
     complete_df = clean_and_prepare_final_df(detailed_df, initial_df)
 
     print('Writing complete stats')
-    write_complete_stats(complete_df, current_df)
+    write_complete_stats(complete_df, current_df, bucket_name)
 
     print('Writing normalized stats')
-    write_normalized_stats()
+    write_normalized_stats(bucket_name)
 
     return
 
 if __name__ == '__main__':
     try:
         print('Program started')
-        main()
+        main(PROJECT_ID, BUCKET_NAME)
+        print('Program complete')
     except Exception as e:
         print('Program crashed')
         print(f'Error occured in update_main.py: {e}')

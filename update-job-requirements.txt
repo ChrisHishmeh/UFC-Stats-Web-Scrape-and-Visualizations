@@ -1,2 +1,4 @@
 pandas
 bs4
+requests
+google-cloud-storage
