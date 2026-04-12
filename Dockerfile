@@ -5,7 +5,7 @@ WORKDIR /app
 COPY update-job-requirements.txt .
 RUN pip install --no-cache-dir -r update-job-requirements.txt
 
-copy gcp.py .
+COPY gcp.py .
 COPY update.py .
 COPY update_main.py .
 
