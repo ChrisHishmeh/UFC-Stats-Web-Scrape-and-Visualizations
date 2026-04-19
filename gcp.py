@@ -45,5 +45,5 @@ def check_bucket_exists(bucket_name: str, project_id: str) -> None:
 
     bucket = client.bucket(bucket_name)
 
-    if not bucket.exist():
+    if not bucket.exists():
         raise GCPBucketNotFound(f'Cannot find bucket: {bucket_name} in the given project_id. Ensure bucket and csv files exist before rerunning')

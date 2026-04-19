@@ -27,9 +27,11 @@ Normalized Stats Table is processed and normalized. 1 row represents 1 fight for
 2. Ensure that the artifact repo already exists in gcp. If it doesn't exist, create repo using:
     `gcloud artifacts repositories create {repo name} --repository-format=docker --location={region}`
 
+    Note: check which project your gcloud cli is configured to using: `gcloud config get-value project`
+
 
 3. Tag image with gcp region and artifact repository name. Run command
-    `docker tag {local-image-name} {REGION-docker.pkg.dev/PROJECT ID/ARTIFACT REPO/NAME}`
+    `docker tag {local-image-name} {REGION-docker.pkg.dev/PROJECT ID/ARTIFACT REPO/NAME:latest}`
     ensure that the artifact repo already exists in gcp.
 
 4. Authenticate docker to allow push to GCP (modifies docker config)
